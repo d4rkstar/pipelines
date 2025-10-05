@@ -51,7 +51,7 @@ class Pipeline:
         pass
 
     def init_model(self):
-        self.model = PromptInjection(model="protectai/gpt-pi-detector-light", threshold=0.8, match_type=MatchType.FULL)
+        self.model = PromptInjection(threshold=0.95, match_type=MatchType.FULL)
         
 
     async def on_startup(self):
@@ -74,7 +74,7 @@ class Pipeline:
         print(f"inlet:{__name__}")
         if not hasattr(self, "model") or self.model is None:
             self.init_model()
-            
+
         user_message = body["messages"][-1]["content"]
 
         # Normalizza il contenuto in stringa (supporta multimodale)
