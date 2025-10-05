@@ -54,7 +54,7 @@ class Pipeline:
         # This function is called when the server is started.
         print(f"on_startup:{__name__}")
 
-        self.model = PromptInjection(threshold=0.8, match_type=MatchType.FULL)
+        self.model = PromptInjection(model="protectai/gpt-pi-detector-light", threshold=0.8, match_type=MatchType.FULL)
         pass
 
     async def on_shutdown(self):
@@ -67,15 +67,31 @@ class Pipeline:
         pass
 
     async def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
-        # This filter is applied to the form data before it is sent to the OpenAI API.
         print(f"inlet:{__name__}")
 
         user_message = body["messages"][-1]["content"]
 
-        # Filter out prompt injection messages
+        # Normalizza il contenuto in stringa (supporta multimodale)
+        if isinstance(user_message, list):
+            parts = []
+            for item in user_message:
+                if isinstance(item, dict):
+                    if "text" in item:
+                        parts.append(item["text"])
+                    elif "image_url" in item:
+                        parts.append("[image]")
+                    else:
+                        parts.append(str(item))
+                else:
+                    parts.append(str(item))
+            user_message = " ".join(parts)
+
+        elif not isinstance(user_message, str):
+            user_message = str(user_message)
+
         sanitized_prompt, is_valid, risk_score = self.model.scan(user_message)
 
-        if risk_score > 0.8: 
+        if risk_score > 0.8:
             raise Exception("Prompt injection detected")
 
         return body

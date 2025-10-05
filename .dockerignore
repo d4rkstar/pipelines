@@ -9,3 +9,4 @@ docs
 *.md
 dev.sh
 dev-docker.sh
+Taskfile.yaml

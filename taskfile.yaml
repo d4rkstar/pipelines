@@ -1,11 +1,58 @@
 version: '3'
 
+vars:
+  BASETAG: 0.1.0-dev
+  NAMESPACE: d4rkstar
+  REGISTRY: dockerhub
+  COMMIT_ID:
+    sh: git rev-parse --short HEAD
+  TAG:
+    sh: git describe --tags --abbrev=0 2>/dev/null || echo latest
+
 tasks:
-  build-and-push:
-    desc: "Build and push"
-    silent: false
+  base-image-name:
+    silent: true
+    cmds:
+      - |
+        if [ -n "{{.REGISTRY}}" ] && [ -z "{{.NAMESPACE}}" ]; then
+          echo "Error: NAMESPACE variable is not set in .env"
+          exit 1
+        fi
+        if [ "{{.REGISTRY}}" = "ghcr" ]; then
+          echo "ghcr.io/{{.NAMESPACE}}/pipelines"
+        elif [ "{{.REGISTRY}}" = "dockerhub" ]; then
+          echo "docker.io/{{.NAMESPACE}}/pipelines"
+        else
+          echo "pipelines"
+        fi
+
+  buildx:
+    desc: |
+      Build the docker image using buildx. Set PUSH=1 to push the image to the registry.
+    silent: true
     cmds:
       - rm -f pipelines/*.py
-      - cp examples/filters/llmguard_prompt_injection_filter_pipeline.py pipelines/
-      - docker buildx build --platform linux/amd64,linux/arm64 -t d4rkstar/pipelines:main --push .
+      - cp examples/filters/llmguard_prompt_injection_filter_pipeline.py pipelines/      
+      - |
+        BASEIMG=$(task base-image-name)
+        IMG="$BASEIMG:{{.TAG}}"
+        echo "Building and Pushing $IMG"
+        if [ -n "{{.PUSH}}" ]; then
+          if [ -z "{{.REGISTRY}}" ]; then
+            echo "Error: REGISTRY variable must be set in .env to push the image"
+            exit 1
+          fi
+          {{.DRY}} docker buildx build -t $IMG --platform linux/amd64,linux/arm64 . --push
+        else
+          {{.DRY}} docker buildx build -t $IMG . --load
+        fi
+
         
+  image-tag:
+    silent: true
+    desc: |
+      Create a new tag for the current git commit.      
+    cmds:
+      - git tag -d $(git tag)
+      - git tag -f {{.BASETAG}}.$(date +%y%m%d%H%M)
+      - env PAGER= git tag
