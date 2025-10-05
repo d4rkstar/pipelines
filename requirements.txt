@@ -65,3 +65,8 @@ beautifulsoup4
 # Llama Index for RAG
 llama-index
 llama-index-llms-ollama
+
+# Custom deps
+cryptography==44.0.3
+presidio_anonymizer==2.2.358
+llm-guard==0.3.16

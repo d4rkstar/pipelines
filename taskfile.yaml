@@ -1,0 +1,11 @@
+version: '3'
+
+tasks:
+  build-and-push:
+    desc: "Build and push"
+    silent: false
+    cmds:
+      - rm -f pipelines/*.py
+      - cp examples/filters/llmguard_prompt_injection_filter_pipeline.py pipelines/
+      - docker buildx build --platform linux/amd64,linux/arm64 -t d4rkstar/pipelines:main --push .
+        
