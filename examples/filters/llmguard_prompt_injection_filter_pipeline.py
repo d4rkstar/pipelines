@@ -50,11 +50,15 @@ class Pipeline:
 
         pass
 
+    def init_model(self):
+        self.model = PromptInjection(model="protectai/gpt-pi-detector-light", threshold=0.8, match_type=MatchType.FULL)
+        
+
     async def on_startup(self):
         # This function is called when the server is started.
         print(f"on_startup:{__name__}")
 
-        self.model = PromptInjection(model="protectai/gpt-pi-detector-light", threshold=0.8, match_type=MatchType.FULL)
+        self.init_model()
         pass
 
     async def on_shutdown(self):
@@ -68,7 +72,9 @@ class Pipeline:
 
     async def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
         print(f"inlet:{__name__}")
-
+        if not hasattr(self, "model") or self.model is None:
+            self.init_model()
+            
         user_message = body["messages"][-1]["content"]
 
         # Normalizza il contenuto in stringa (supporta multimodale)
